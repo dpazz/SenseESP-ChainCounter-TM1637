@@ -13,6 +13,7 @@
 #include "sensesp/sensors/sensor.h"
 #include "sensesp/signalk/signalk_output.h"
 #include "sensesp/system/lambda_consumer.h"
+#include "sensesp/transforms/frequency.h"   // per bozza windspeed
 #include "sensesp_app_builder.h"
 
 using namespace sensesp;
@@ -29,7 +30,7 @@ void setup() {
   SensESPAppBuilder builder;
   sensesp_app = (&builder)
                     // Set a custom hostname for the app.
-                    ->set_hostname("my-sensesp-project")
+                    ->set_hostname("ESP-windnmea-dpazz")
                     // Optionally, hard-code the WiFi and Signal K server
                     // settings. This is normally not needed.
                     //->set_wifi("My WiFi SSID", "my_wifi_password")
@@ -119,6 +120,31 @@ void setup() {
                      "Digital input 2 value")  // Value description
       ));
 
+  // bozza wind speed sensor
+  const char* sk_path = "instrument.wind.speed";
+  const char* config_path = "/sensors/wind_speed";
+  const char* config_path_calibrate = "/sensors/wind_speed/calibrate";
+  const char* config_path_skpath = "/sensors/wind_speed/sk";
+  //////////
+  // connect a RPM meter. A DigitalInputCounter implements an interrupt
+  // to count pulses and reports the readings every read_delay ms
+  // (500 in the example). A Frequency
+  // transform takes a number of pulses and converts that into
+  // a frequency. The sample multiplier converts the 97 tooth
+  // tach output into Hz, SK native units.
+  const float multiplier = 1.0 / 97.0;
+  const unsigned int read_delay = 500;
+  uint8_t pin = 4;
+
+  auto* sensor = new DigitalInputCounter(pin, INPUT_PULLUP, RISING, read_delay);
+
+  sensor
+      ->connect_to(new Frequency(
+          multiplier, config_path_calibrate))  // connect the output of sensor
+                                               // to the input of Frequency()
+      ->connect_to(new SKOutputFloat(
+          sk_path, config_path_skpath));  // connect the output of Frequency()
+                                          // to a Signal K Output as a number
   // Start networking, SK server connections and other SensESP internals
   sensesp_app->start();
 }
