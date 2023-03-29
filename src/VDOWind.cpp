@@ -13,7 +13,7 @@
 int LED = 13;
 bool inputpullup = true;
 volatile uint8_t inputmode;
-const unsigned long DEBOUNCE = 10000ul;      // Minimum switch time in microseconds
+const unsigned long DEBOUNCE = 10ul;      // Minimum switch time in microseconds
 const unsigned long DIRECTION_OFFSET = 0ul;  // Manual direction offset in degrees, if required
 /*const*/ unsigned long TIMEOUT = 1500ul;       // Maximum time allowed between speed pulses in millisec.
 const unsigned long UPDATE_RATE = 500ul;     // How often to send out NMEA data in milliseconds

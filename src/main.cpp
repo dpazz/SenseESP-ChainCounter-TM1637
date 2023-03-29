@@ -15,6 +15,8 @@
 #include "sensesp/system/lambda_consumer.h"
 #include "sensesp/transforms/frequency.h"   // per bozza windspeed
 #include "sensesp_app_builder.h"
+#include "VDO_filter.h"
+
 
 using namespace sensesp;
 
@@ -34,7 +36,7 @@ void setup() {
                     // Optionally, hard-code the WiFi and Signal K server
                     // settings. This is normally not needed.
                     //->set_wifi("My WiFi SSID", "my_wifi_password")
-                    //->set_sk_server("192.168.10.3", 80)
+                    //->set_sk_server("192.168.3.235", 3000)
                     ->get_app();
 
   // GPIO number to use for the analog input
@@ -121,29 +123,48 @@ void setup() {
       ));
 
   // bozza wind speed sensor
-  const char* sk_path = "instrument.wind.speed";
+
+  const char* sk_path = "sensors.wind.speed";
   const char* config_path = "/sensors/wind_speed";
-  const char* config_path_calibrate = "/sensors/wind_speed/calibrate";
+  const char* config_path_read_delay = "/sensors/wind_speed/read_delay"; // time between reads in milliseconds
+  const char* config_path_DEBOUNCE = "/sensors/wind_speed/ignore_interval"; // minimum time between events in milliseconds
+  
+  const char* config_path_TIMEOUT = "/sensors/wind_speed/timeout";   // Maximum time allowed between events in millisec.
+  const char* config_path_calibrate = "/sensors/wind_speed/calibrate"; // to normalize in Hz the measured event frequency
   const char* config_path_skpath = "/sensors/wind_speed/sk";
-  //////////
-  // connect a RPM meter. A DigitalInputCounter implements an interrupt
-  // to count pulses and reports the readings every read_delay ms
-  // (500 in the example). A Frequency
-  // transform takes a number of pulses and converts that into
-  // a frequency. The sample multiplier converts the 97 tooth
-  // tach output into Hz, SK native units.
-  const float multiplier = 1.0 / 97.0;
+  
+  const unsigned int DEBOUNCE = 10; // minimum time between interrupts in milliseconds
+  const unsigned int TIMEOUT = 1500;   // Maximum time allowed between speed pulses in millisec.
+  //const float multiplier = 0.0035;
   const unsigned int read_delay = 500;
+  const float multiplier = 100*(1/read_delay); // only a starting guess 
+
+  // Knots is actually stored as (Knots * 100). Deviations below should match these units.
+  const int BAND_0 =  10 * 100;
+  const int BAND_1 =  80 * 100;
+
+  const int SPEED_DEV_LIMIT_0 =  5 * 100;     // Deviation from last measurement to be valid. Band_0: 0 to 10 knots
+  const int SPEED_DEV_LIMIT_1 = 10 * 100;     // Deviation from last measurement to be valid. Band_1: 10 to 80 knots
+  const int SPEED_DEV_LIMIT_2 = 30 * 100;     // Deviation from last measurement to be valid. Band_2: 80+ knots
+
   uint8_t pin = 4;
 
-  auto* sensor = new DigitalInputCounter(pin, INPUT_PULLUP, RISING, read_delay);
+  auto* sensor = new DigitalInputDebounceCounter(pin, INPUT_PULLUP, RISING, read_delay, DEBOUNCE, config_path_read_delay);
 
   sensor
-      ->connect_to(new Frequency(
+      /*->connect_to (new VDO_Filter (
+                                    BAND_0, BAND_1, 
+                                    SPEED_DEV_LIMIT_0, SPEED_DEV_LIMIT_1, SPEED_DEV_LIMIT_2,
+                                    TIMEOUT, config_path_TIMEOUT
+                                  ))*/
+
+       ->connect_to(new Frequency(
           multiplier, config_path_calibrate))  // connect the output of sensor
-                                               // to the input of Frequency()
+                                               // to the input of Frequency()                         
       ->connect_to(new SKOutputFloat(
-          sk_path, config_path_skpath));  // connect the output of Frequency()
+          sk_path, config_path_skpath,
+          new SKMetadata ("hz", "Anemometer cups rotation frequency")
+          ));  // connect the output of Frequency()
                                           // to a Signal K Output as a number
   // Start networking, SK server connections and other SensESP internals
   sensesp_app->start();
