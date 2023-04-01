@@ -7,7 +7,7 @@
 // You can use this source file as a basis for your own projects.
 // Remove the parts that are not relevant to you, and add your own code
 // for external hardware libraries.
-
+#include "sensesp.h"
 #include "sensesp/sensors/analog_input.h"
 #include "sensesp/sensors/digital_input.h"
 #include "sensesp/sensors/sensor.h"
@@ -15,10 +15,10 @@
 #include "sensesp/system/lambda_consumer.h"
 #include "sensesp/transforms/frequency.h"   // per bozza windspeed
 #include "sensesp_app_builder.h"
-#include "VDO_filter.h"
-
+//#include "VDO_filter.h"
 
 using namespace sensesp;
+
 
 reactesp::ReactESP app;
 
@@ -27,7 +27,9 @@ void setup() {
 #ifndef SERIAL_DEBUG_DISABLED
   SetupSerialDebug(115200);
 #endif
-
+  
+  
+ 
   // Construct the global SensESPApp() object
   SensESPAppBuilder builder;
   sensesp_app = (&builder)
@@ -37,8 +39,11 @@ void setup() {
                     // settings. This is normally not needed.
                     //->set_wifi("My WiFi SSID", "my_wifi_password")
                     //->set_sk_server("192.168.3.235", 3000)
+                    ->enable_ota("123456789")
                     ->get_app();
-
+ 
+  
+ 
   // GPIO number to use for the analog input
   const uint8_t kAnalogInputPin = 36;
   // Define how often (in milliseconds) new samples are acquired
@@ -121,7 +126,8 @@ void setup() {
       new SKMetadata("",                       // No units for boolean values
                      "Digital input 2 value")  // Value description
       ));
-
+ 
+ 
   // bozza wind speed sensor
 
   const char* sk_path = "sensors.wind.speed";
@@ -148,7 +154,7 @@ void setup() {
   const int SPEED_DEV_LIMIT_2 = 30 * 100;     // Deviation from last measurement to be valid. Band_2: 80+ knots
 
   uint8_t pin = 4;
-
+ 
   auto* sensor = new DigitalInputDebounceCounter(pin, INPUT_PULLUP, RISING, read_delay, DEBOUNCE, config_path_read_delay);
 
   sensor
@@ -161,13 +167,13 @@ void setup() {
        ->connect_to(new Frequency(
           multiplier, config_path_calibrate))  // connect the output of sensor
                                                // to the input of Frequency()                         
-      ->connect_to(new SKOutputFloat(
+       ->connect_to(new SKOutputFloat(
           sk_path, config_path_skpath,
           new SKMetadata ("hz", "Anemometer cups rotation frequency")
           ));  // connect the output of Frequency()
-                                          // to a Signal K Output as a number
+               // to a Signal K Output as a number
   // Start networking, SK server connections and other SensESP internals
   sensesp_app->start();
 }
 
-void loop() { app.tick(); }
+void loop() {app.tick();}
