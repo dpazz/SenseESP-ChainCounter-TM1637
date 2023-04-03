@@ -13,7 +13,7 @@
 #include "sensesp/sensors/sensor.h"
 #include "sensesp/signalk/signalk_output.h"
 #include "sensesp/system/lambda_consumer.h"
-#include "sensesp/transforms/frequency.h"   // per bozza windspeed
+#include "sensesp/transforms/linear.h"   // per bozza windspeed
 #include "sensesp_app_builder.h"
 //#include "VDO_filter.h"
 
@@ -135,27 +135,28 @@ void setup() {
   const char* config_path_read_delay = "/sensors/wind_speed/read_delay"; // time between reads in milliseconds
   const char* config_path_DEBOUNCE = "/sensors/wind_speed/ignore_interval"; // minimum time between events in milliseconds
   
-  const char* config_path_TIMEOUT = "/sensors/wind_speed/timeout";   // Maximum time allowed between events in millisec.
+  //const char* config_path_TIMEOUT = "/sensors/wind_speed/timeout";   // Maximum time allowed between events in millisec.
   const char* config_path_calibrate = "/sensors/wind_speed/calibrate"; // to normalize in Hz the measured event frequency
   const char* config_path_skpath = "/sensors/wind_speed/sk";
   
   const unsigned int DEBOUNCE = 10; // minimum time between interrupts in milliseconds
-  const unsigned int TIMEOUT = 1500;   // Maximum time allowed between speed pulses in millisec.
+  //const unsigned int TIMEOUT = 1500;   // Maximum time allowed between speed pulses in millisec.
   //const float multiplier = 0.0035;
   const unsigned int read_delay = 500;
   const float multiplier = 100*(1/read_delay); // only a starting guess 
+  const float offset = 0.1; // only a starting guess 
 
   // Knots is actually stored as (Knots * 100). Deviations below should match these units.
-  const int BAND_0 =  10 * 100;
+  /*const int BAND_0 =  10 * 100;
   const int BAND_1 =  80 * 100;
 
   const int SPEED_DEV_LIMIT_0 =  5 * 100;     // Deviation from last measurement to be valid. Band_0: 0 to 10 knots
   const int SPEED_DEV_LIMIT_1 = 10 * 100;     // Deviation from last measurement to be valid. Band_1: 10 to 80 knots
-  const int SPEED_DEV_LIMIT_2 = 30 * 100;     // Deviation from last measurement to be valid. Band_2: 80+ knots
+  const int SPEED_DEV_LIMIT_2 = 30 * 100;     // Deviation from last measurement to be valid. Band_2: 80+ knots */
 
   uint8_t pin = 4;
  
-  auto* sensor = new DigitalInputDebounceCounter(pin, INPUT_PULLUP, RISING, read_delay, DEBOUNCE, config_path_read_delay);
+  auto* sensor = new DigitalInputDebounceCounter(pin, INPUT_PULLUP, FALLING, read_delay, DEBOUNCE, config_path_read_delay);
 
   sensor
       /*->connect_to (new VDO_Filter (
@@ -164,9 +165,9 @@ void setup() {
                                     TIMEOUT, config_path_TIMEOUT
                                   ))*/
 
-       ->connect_to(new Frequency(
-          multiplier, config_path_calibrate))  // connect the output of sensor
-                                               // to the input of Frequency()                         
+       ->connect_to(new Linear(
+          multiplier, offset, config_path_calibrate))  // connect the output of sensor
+                                                      // to the input of Linear()                         
        ->connect_to(new SKOutputFloat(
           sk_path, config_path_skpath,
           new SKMetadata ("hz", "Anemometer cups rotation frequency")

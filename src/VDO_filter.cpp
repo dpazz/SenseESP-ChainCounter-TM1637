@@ -13,22 +13,22 @@ static float absf(float val) {
 static float calc_WS (float new_value){
     // The following converts revolutions per 100 seconds (rps) to knots x 100
     // This calculation follows the Peet Bros. piecemeal calibration data
-    float knots, rps= new_value*100; //knots stored as kn*100
+    float ms, rps= new_value*100; // m/s stored as m/s*100
         // Formule valide per anemometro Peet-Bros da rivedere per VDO/STOWE MHU
         if (rps < 323)
         {
-          knots = (rps * rps * -11)/11507 + (293 * rps)/115 - 12;
+          ms = (rps * rps * -11)/11507 + (293 * rps)/115 - 12;
         }
         else if (rps < 5436)
         {
-          knots = (rps * rps / 2)/11507 + (220 * rps)/115 + 96;
+          ms = (rps * rps / 2)/11507 + (220 * rps)/115 + 96;
         }
         else
         {
-          knots = (rps * rps * 11)/11507 - (957 * rps)/115 + 28664;
+          ms = (rps * rps * 11)/11507 - (957 * rps)/115 + 28664;
         }
         // fine formule Peet-Bros anemometro
-    return knots/100;
+    return ms/100;
 
 }
 
