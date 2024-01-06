@@ -1,4 +1,4 @@
-# SensESP Project Template
+# SenseESP-ChainCounter-TM1637
 
 This repository is derived from  template for [SensESP](https://github.com/SignalK/SensESP/) projects.
 

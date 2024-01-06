@@ -54,7 +54,7 @@ void setup() {
     debugD("Fixed IP configuration failed."); delay(5000);
    }
    sensesp_app = builder.set_hostname("ChainCounter")
-                    ->set_wifi("4G-WIFI-FREE-TIME", "pazzagliawless")
+                    ->set_wifi("SSID", "SSIDpassword")
                     ->get_app();
   /**
    * DigitalInputCounter will count the revolutions of the windlass with a
