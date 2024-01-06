@@ -1,5 +1,6 @@
 
 #include <Arduino.h>
+#include "TM1637.h"
 #include "sensesp/sensors/digital_input.h"
 #include "sensesp/signalk/signalk_output.h"
 #include "sensesp/system/lambda_consumer.h"
@@ -17,17 +18,11 @@
 
 using namespace sensesp;
 sensesp::OTA ota("123456789");
+int CLK_PIN = 25;
+int DIO_PIN = 26;
+float displayed_value = 0; //stores the last value sent to LCD
+TM1637 lcd (CLK_PIN, DIO_PIN);
 /**
- * This example illustrates an anchor chain counter. Note that it
- * doesn't distinguish between chain being let out and chain being
- * taken in, so the intended usage is this: Press the button to make
- * sure the counter is at 0.0. Let out chain until the counter shows
- * the amount you want out. Once the anchor is set, press the button
- * again to reset the counter to 0.0. As you bring the chain in, the
- * counter will show how much you have brought in. Press the button
- * again to reset the counter to 0.0, to be ready for the next anchor
- * deployment.
- *
  * A bi-directional chain counter is possible,
  * this is an example that supersedes the basic implementation found in
  * sensesp examples using the "down" button of the windlass read through a
@@ -44,30 +39,15 @@ IPAddress subnetmask (255,255,255,0);
 IPAddress dns1 (10,10,10,1);
 IPAddress dns2 (8,8,8,8);
 
-inline void init_pin (uint8_t pin, bool level) {
-    pinMode(pin, OUTPUT);
-    digitalWrite (pin, level);
-}
-
-inline void pulse_pin (uint8_t pin, uint32_t duration_ms = 15, bool to_level = HIGH) {
-    digitalWrite (pin, to_level);
-    delay (duration_ms);
-    digitalWrite (pin,!to_level);
-}   
-    
-int inc_pin_, dec_pin_, res_pin_;
-int duration_ms_;
-int value_ = 0;
-int displayed_value = 0;
 bool stop_decrement = false;
 bool already_reset = false;
 float value = 0.0f;
+float value_ = 0.0f; //the rounded to 1 decimal value
 
 void setup() {
   SetupSerialDebug(115200);
 
 
-  OTA ota("123456789");
 
   SensESPAppBuilder builder;
    if (WiFi.config(staticIP, gateway, subnetmask, dns1, dns2) == false) {
@@ -117,87 +97,75 @@ void setup() {
 
   /**
    * An intermediate transform that catch the emitted value froam the accumulator
-   * to drive the counting on a physical counter display in parallel with what
-   * is tranmitted to signalk. The counter has both increment and decrement
-   * wires plus the reset wire (to be used when the accumulator is reset). The
-   * transform, after having used the value to manage the physical counter, 
-   * emits the value itself in order to be connected to skoutputfloat
+   * to drive a TM1637 4-digit LCD display to show the count in parallel with what
+   * is tranmitted to signalk. The transform, after having used the value to manage
+   * the physical counter, emits the value itself in order to be connected to skoutputfloat
    */
-   int COUNTER_INC_PIN = 16;
-   int COUNTER_DEC_PIN = 17;
-   int COUNTER_RES_PIN = 18;
-   int pulse_length_ms = 55;
-   int inc_pin = COUNTER_INC_PIN;
-   int dec_pin = COUNTER_DEC_PIN;
-   int res_pin = COUNTER_RES_PIN;
-   int pulse_duration = pulse_length_ms;
-  // This lambda function "drives" the counting on digital display  
-  // using the pin interface to inc, dec or reset the count. The
+   
+  // This lambda function "drives" the counting on LCD TM1637 display  
+  // using the TM1637 class "wrapper" to show the count on LCD. The
   // final "-> float" refers to the return type of the function
   // As for the input tranformation it is left unchanged. The lambda
   // function in this particular case operates as a "stub" to drive
-  // the counter display device remaining a "nop" as for information transfer
+  // the LCD display remaining a "nop" as for information transfer
  
   auto digital_counter_function = [] (float input,
-                                      int inc_pin,
-                                      int dec_pin,
-                                      int res_pin,
-                                      int duration_ms
+                                      float lcd_value
                                      ) -> float  {
-        value_ = round(input);
-        if (value_ == 0) { //means that "input" is less than 0,5
-          if (!already_reset) {
-            if ( displayed_value > 0  )  { //decrementing 
-                debugD("pulse on reset pin: decrement reaches 0");
+        value_ = float(round(input*10)/10); // prepare a rounded float
+                                            // with 1 significant decimal
+        if (lcd_value >= value_)  {         // decrementing 
+          if (value_ <= 0.5f ) {            // nearby all chain recovered
+            if ( !already_reset  )  {       // only the first time
+                debugD("reset LCD: decrement nearby 0");
                 stop_decrement = true;
-                pulse_pin(res_pin_, 2*duration_ms_, HIGH);
-              } else  debugD("don't need to pulse on reset pin: displayed_value already = 0");
+                lcd.clearScreen();
+                lcd.display(00.00f);
+                lcd.offMode();
+              } else  debugD("don't need to reset LCD again: displayed_value already = 0");
               already_reset = true;
           }
-        } else if ((value_- displayed_value) >= 1) { // incrementing
-              debugD("pulse on increment pin");
-              pulse_pin(inc_pin_, duration_ms_, HIGH);
-        } else if ((value_- displayed_value) <= -1) { //decrementing
-            if ( !stop_decrement ){
-              debugD("pulse on decrement pin");
-              pulse_pin(dec_pin_, duration_ms_, HIGH);
-            }
         }
-        displayed_value = value_; // displayed_value = the positive integer digit on digital counter
-        if (displayed_value > 0) {stop_decrement = false; already_reset = false;}
-                                      
-        return value = input ;
+        if ( !stop_decrement ){
+              debugD("write value_ on lcd");
+              if (value_ > 0) {
+                uint8_t offset = 0U;
+                lcd.onMode();
+                if (value_ <= 9.90 ){offset = 1U;};
+                lcd.colonOn();
+                lcd.display(value_,true,true,offset);
+              }  
+        }
+        lcd_value = value_; // lcd_value = the rounded float with 1 decimal on digital counter
+        if (lcd_value > 0) {stop_decrement = false; already_reset = false;}
+        return value = input ;//NOP as for info transfer   
+                                
   };
           
   // This is an array of parameter information, providing the keys and
   // descriptions required to display user-friendly values in the configuration
   // interface.
 
-    const ParamInfo* digitcounter_param_webUI_info_struct = new ParamInfo[4]{
-         {"increment_pin", "Increment_pin"}, {"decrement_pin", "Decrement_pin"}, {"reset_pin", "Reset_pin"},
-         {"duration_ms", "Pulse_duration_ms"}};
+    const ParamInfo* digitcounter_param_webUI_info_struct = new ParamInfo[1]{
+         {"displayed_value", "LCD_value"}};
 
     String digitcounter_config_path = "/digitcounter/config";
+    //HINT: use only int, float or bool parameters because
+    //the web UI automatic detect of types to build
+    //interface schema doesn't work
 
-    auto counterdisplay = new LambdaTransform <float, float, int, int, int, int>
+    auto counterdisplay = new LambdaTransform <float, float>
                                                (  digital_counter_function,
-                                                  inc_pin, dec_pin, res_pin,
-                                                  pulse_duration,
+                                                  displayed_value,
                                                   digitcounter_param_webUI_info_struct,
                                                   digitcounter_config_path 
                                                ) ;
     counterdisplay->set_description(
-      "counterdisplay drives the counting on a physical counter display "
-      "(in parallel with what is transmitted to signalk) via inc, dec and res digital pins "
+      "counterdisplay drives the counting on a TM1637 lcd display "
+      "(in parallel with what is transmitted to signalk) using TM1637 wrapper class "
       "output is equal to input since the transform is used to drive the physical unit only");
 
-    inc_pin_ = inc_pin;
-    init_pin(inc_pin_, LOW);
-    dec_pin_ = dec_pin;
-    init_pin(dec_pin_, LOW);
-    res_pin_ = res_pin;
-    init_pin(res_pin_,LOW);
-    duration_ms_ = pulse_duration;
+  lcd.begin(); //start lcd device
 
   /**
    * An IntegratorT<int, float> called "accumulator" adds up all the counts it
@@ -218,13 +186,26 @@ void setup() {
       "which is the amount of chain, in meters, that is moved by each revolution "
       "of the windlass");
 
-    value_ = round(value = accumulator->value);
-    debugD("After load_configuration - value_ = %02d", value_);
-    if ( value_ >=0 ) {
-      pulse_pin(res_pin_, 2*duration_ms_, HIGH); //reset digital display
-      delay(duration_ms_);
-      for (size_t i = 0; i < value_; i++) {pulse_pin (inc_pin_, duration_ms_, HIGH); delay (duration_ms_);}
-        //set digital display to the value stored in SPIFFS
+    value_ = (round(value = accumulator->value) * 10)/10;
+    debugD("After accumulator load_configuration - value_ = %00.0f", value_);
+    if ( value_ > 0 ) {
+      stop_decrement = false;
+      already_reset = false;
+    } else {
+      stop_decrement = true;
+      already_reset = true;
+    }
+    lcd.setFloatDigitCount(2);
+    lcd.setDp(2);
+    lcd.clearScreen();  // Resets the digital display
+    lcd.offMode();
+    lcd.colonOff();
+    if (value_ > 0) {
+      uint8_t offset = 0U;
+      lcd.onMode();
+      if (value_ <= 9.90 ){offset = 1U;}
+      lcd.colonOn();
+      lcd.display(value_,true,true,offset);
     }
     displayed_value = value_;
 
@@ -243,9 +224,10 @@ void setup() {
    metadata->short_name_ = "Rode Out";
 
   /**
-   * chain_counter is connected to accumulator, which is connected to an
-   * SKOutputNumber, which sends the final result to the indicated path on the
-   * Signal K server. (Note that each data type has its own version of SKOutput:
+   * chain_counter is connected to accumulator, which is connected to 
+   * the counterdisplay "stub" and finally to the SKOutputNumber, 
+   * which sends the final result to the indicated path on the Signal K server.
+   * (Note that each data type has its own version of SKOutput:
    * SKOutputNumber for floats, SKOutputInt, SKOutputBool, and SKOutputString.)
    */
    String sk_path = "navigation.anchor.rodeDeployed";
@@ -290,33 +272,19 @@ void setup() {
    * goes to GND when pressed, make it "if (input == 0)".
    */
   
-   auto reset_function = [accumulator, COUNTER_RES_PIN](int input) {
+   auto reset_function = [accumulator](int input) {
     if (input == 1) {
       debugD("reset_function called");
       accumulator->reset();                 // Resets the output and stored value to 0.0
-      value_ = 0;
+      value_ = 0.0f;
       value = 0.0f;
       already_reset= true;
-      pulse_pin(COUNTER_RES_PIN,1000, HIGH);// Resets to 0 the digital display
+      lcd.clearScreen();// Resets to 0 the digital display
+      lcd.display(value_,true ,true,0);
+      lcd.offMode();
     }
    };
 
-  /**
-   * Create the LambdaConsumer that calls reset_function, Because DigitalInputChange
-   * outputs an int, the version of LambdaConsumer we need isLambdaConsumer<int>.
-   * While this approach - defining the lambda function (above) separate from the
-   * LambdaConsumer (below) - is simpler to understand, there is a more concise approach:
-   *
-    auto* button_consumer = new LambdaConsumer<int>([accumulator, 
-                                                     counterdisplay,
-                                                     COUNTER_RES_PIN](int input) {
-      if (input == 0) {
-        accumulator->reset();
-        counterdisplay->pulse_pin(COUNTER_RES_PIN,1000, LOW);
-      }
-    });
-   *
-  */
   auto* button_consumer = new LambdaConsumer<int>(reset_function);
 
   /* Connect the button_watcher to the debounce to the button_consumer. */
