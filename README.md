@@ -5,7 +5,7 @@ This repository is derived from  template for [SensESP](https://github.com/Signa
 Comprehensive documentation for SensESP, including how to get started with your own project, is available at the [SensESP documentation site](https://signalk.org/SensESP/).
 
 
-# A bi-directional chain counter.
+## A bi-directional chain counter.
 
  this is an example that supersedes the basic chain counter implementation found in sensesp examples using the "down" button of the windlass read through a digitalinput pin as a direction (up or down) driver. The  reset function is still valid to set the count to 0 value, but in this implementation the value emitted should count the effective chain meters deployed.
 
