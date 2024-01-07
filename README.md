@@ -20,5 +20,15 @@ Comprehensive documentation for SensESP, including how to get started with your 
  The same voltage reduction is done to the wire connected to the UP pin in order to catch the direction of the count. It is assumed that when the wire is connected to +12 V (and reduced to 3,3 at UP Pin connection) the chain is deployed downward. To obtain this is enough to connect the wire to the + side of the NO relay that rotates downward the chain windlass (when the relay goes closed the
  the + side is driven at 12V).
  
- Hardware sensr and display images:
- 
+ Hardware sensor and display images:
+
+ ![alt text](https://github.com/dpazz/SensESP-ChainCounter-TM1637/resources/NJK-5002C_Hall_sensor_details.jpg?raw=true)
+
+ [HINT] As you can see the sensor power voltage range covers both 12V and 24V.
+
+ ![alt text](https://github.com/dpazz/SensESP-ChainCounter-TM1637/resources/TM1637.jpeg?raw=true)
+
+ [HINT] The 4-digit I2c TM1637 display can be found in two versions with two different digit dimension (0.36" or 0.54")
+ The two version are with "colon" active or "decimal dots" active (due to limitation of the coding chip unable to drive
+ both the dots and the colon). This code example uses the "colon" type (and some adaption in the code was used to cope with
+ that) because of immediate availability in the testing lab. The better "dot" version should be used (and code slightly modified accordingly)
