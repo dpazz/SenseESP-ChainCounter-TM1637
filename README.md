@@ -22,11 +22,11 @@ Comprehensive documentation for SensESP, including how to get started with your 
  
  Hardware sensor and display images:
 
- ![alt text](https://github.com/dpazz/SensESP-ChainCounter-TM1637/blob/main/resources/NJK-5002C_Hall_sensor_details.jpg?raw=true)
+ ![alt text](https://github.com/dpazz/SenseESP-ChainCounter-TM1637/blob/main/resources/NJK-5002C_Hall_sensor_details.jpg)
 
  [HINT] As you can see the sensor power voltage range covers both 12V and 24V.
 
- ![alt text](https://github.com/dpazz/SensESP-ChainCounter-TM1637/blob/main/resources/TM1637.jpeg?raw=true)
+ ![alt text](https://github.com/dpazz/SensESP-ChainCounter-TM1637/blob/main/resources/TM1637.jpeg)
 
  [HINT] The 4-digit I2c TM1637 display can be found in two versions with two different digit dimension (0.36" or 0.54")
  The two version are with "colon" active or "decimal dots" active (due to limitation of the coding chip unable to drive
