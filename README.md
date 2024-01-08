@@ -18,8 +18,8 @@ Comprehensive documentation for SensESP, including how to get started with your 
 
  > The hardware used for this project is a very popular and cheap Hall sensor NJK-5002C connected to the 12 V power. The voltage of
  > signal wire coming from this sensor is reduced by a voltage divider in order to obtain the required 3.3V TTL input for each pulse
- > (a common 10 kOhm potentiometer can used to obtain the reduction). A simple neodimium magnet should be installed in the gypsy (if
- > not yet factory provided) facing the fixed installation of the hall sensor at every rotation. Is up to you to build a "marine
+ > (a common 10 kOhm potentiometer can be used to obtain the reduction). A simple neodimium magnet should be installed in the gypsy 
+ > (if not yet factory provided) facing the fixed installation of the hall sensor at every rotation. Is up to you to build a "marine
  > grade" weather proof casing & installation of the two (magnet & sensor) fitting to your boat windlass. Many examples of this can be
  > found on YouTube.
  >
