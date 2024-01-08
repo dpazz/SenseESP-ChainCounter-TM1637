@@ -16,16 +16,16 @@ Comprehensive documentation for SensESP, including how to get started with your 
  > [!NOTE] 
  > Hardware notes :
 
- > The hardware used for this project is a very common and cheap Hall sensor NJK-5002C connected to the 12 V power. The voltage of
+ > The hardware used for this project is a very popular and cheap Hall sensor NJK-5002C connected to the 12 V power. The voltage of
  > signal wire coming from this sensor is reduced by a voltage divider in order to obtain the required 3.3V TTL input for each pulse
- > (a common 10kOhm potentiometer can used to obtain the reduction). A simple neodimium magnet should be installed in the gypsy (if
- > not yet factory provided) facing the fixed installation of the hall sensor at every rotation. Is up to you to build a marine
- > weather proof casing & installation of the two (magnet & sensor) fitting to your boat windlass. Many examples of this can be
+ > (a common 10 kOhm potentiometer can used to obtain the reduction). A simple neodimium magnet should be installed in the gypsy (if
+ > not yet factory provided) facing the fixed installation of the hall sensor at every rotation. Is up to you to build a "marine
+ > grade" weather proof casing & installation of the two (magnet & sensor) fitting to your boat windlass. Many examples of this can be
  > found on YouTube.
  >
  > The same voltage reduction is done to the wire connected to the UP pin in order to catch the direction of the count. It is assumed
- > that when the wire is connected to +12 V (and reduced to 3,3 at UP Pin connection) the chain is deployed downward. To obtain this
- > is enough to connect the wire to the + side of the NO relay that rotates downward the chain windlass (when the relay goes closed the
+ > that when the wire is connected to +12 V (and reduced to 3.3 V at UP Pin connection) the chain is deployed downward. To obtain this
+ > is enough to connect the wire to the + side of the NO relay that rotates downward the chain windlass (when the relay is closed the
  > the + side is driven at 12V).
  
  > [!NOTE] 

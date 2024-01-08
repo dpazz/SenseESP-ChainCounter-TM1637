@@ -105,11 +105,12 @@ void setup() {
    */
    
   // This lambda function "drives" the counting on LCD TM1637 display  
-  // using the TM1637 class "wrapper" to show the count on LCD. The
+  // using the TM1637 class "wrapper" to display the count. The
   // final "-> float" refers to the return type of the function
   // As for the input tranformation it is left unchanged. The lambda
-  // function in this particular case operates as a "stub" to drive
-  // the LCD display remaining a "nop" as for information transfer
+  // function in this particular case "spills" the input value just 
+  // to drive the 4digit display remaining a "nop" as for information
+  // transfer
  
   auto digital_counter_function = [] (float input,
                                       float digit_value_displayed
