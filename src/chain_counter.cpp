@@ -21,7 +21,7 @@ sensesp::OTA ota("123456789");
 int CLK_PIN = 25;
 int DIO_PIN = 26;
 float displayed_value = 0; //stores the last value sent to LCD
-TM1637 lcd (CLK_PIN, DIO_PIN);
+TM1637 four_digit (CLK_PIN, DIO_PIN);
 /**
  * A bi-directional chain counter is possible,
  * this is an example that supersedes the basic implementation found in
@@ -96,10 +96,12 @@ void setup() {
       );
 
   /**
-   * An intermediate transform that catch the emitted value froam the accumulator
+   * An intermediate transform that catch the emitted value from the accumulator
    * to drive a TM1637 4-digit LCD display to show the count in parallel with what
    * is tranmitted to signalk. The transform, after having used the value to manage
-   * the physical counter, emits the value itself in order to be connected to skoutputfloat
+   * the physical counter, emits the value itself in order to be used (if necessary)
+   * to further processing steps. In the present case the value itself is connected 
+   * to skoutputfloat
    */
    
   // This lambda function "drives" the counting on LCD TM1637 display  
@@ -110,18 +112,18 @@ void setup() {
   // the LCD display remaining a "nop" as for information transfer
  
   auto digital_counter_function = [] (float input,
-                                      float lcd_value
+                                      float digit_value_displayed
                                      ) -> float  {
         value_ = float(round(input*10)/10); // prepare a rounded float
                                             // with 1 significant decimal
-        if (lcd_value >= value_)  {         // decrementing 
+        if (digit_value_displayed >= value_)  {         // decrementing 
           if (value_ <= 0.5f ) {            // nearby all chain recovered
             if ( !already_reset  )  {       // only the first time
                 debugD("reset LCD: decrement nearby 0");
                 stop_decrement = true;
-                lcd.clearScreen();
-                lcd.display(00.00f);
-                lcd.offMode();
+                four_digit.clearScreen();
+                four_digit.display(00.00f);
+                four_digit.offMode();
               } else  debugD("don't need to reset LCD again: displayed_value already = 0");
               already_reset = true;
           }
@@ -130,14 +132,14 @@ void setup() {
               debugD("write value_ on lcd");
               if (value_ > 0) {
                 uint8_t offset = 0U;
-                lcd.onMode();
+                four_digit.onMode();
                 if (value_ <= 9.90 ){offset = 1U;};
-                lcd.colonOn();
-                lcd.display(value_,true,true,offset);
+                four_digit.colonOn();
+                four_digit.display(value_,true,true,offset);
               }  
         }
-        lcd_value = value_; // lcd_value = the rounded float with 1 decimal on digital counter
-        if (lcd_value > 0) {stop_decrement = false; already_reset = false;}
+        digit_value_displayed = value_; // lcd_value = the rounded float with 1 decimal on digital counter
+        if (digit_value_displayed > 0) {stop_decrement = false; already_reset = false;}
         return value = input ;//NOP as for info transfer   
                                 
   };
@@ -152,7 +154,9 @@ void setup() {
     String digitcounter_config_path = "/digitcounter/config";
     //HINT: use only int, float or bool parameters because
     //the web UI automatic detect of types to build
-    //interface schema doesn't work
+    //interface schema doesn't work with other parameter
+    //types like e.g char or uint8_t. At least for the
+    //current SignalK/SensESP release (2.7.2 at 08 Jan 2024)
 
     auto counterdisplay = new LambdaTransform <float, float>
                                                (  digital_counter_function,
@@ -165,7 +169,7 @@ void setup() {
       "(in parallel with what is transmitted to signalk) using TM1637 wrapper class "
       "output is equal to input since the transform is used to drive the physical unit only");
 
-  lcd.begin(); //start lcd device
+  four_digit.begin(); //start lcd device
 
   /**
    * An IntegratorT<int, float> called "accumulator" adds up all the counts it
@@ -195,17 +199,17 @@ void setup() {
       stop_decrement = true;
       already_reset = true;
     }
-    lcd.setFloatDigitCount(2);
-    lcd.setDp(2);
-    lcd.clearScreen();  // Resets the digital display
-    lcd.offMode();
-    lcd.colonOff();
+    four_digit.setFloatDigitCount(2);
+    four_digit.setDp(2);
+    four_digit.clearScreen();  // Resets the digital display
+    four_digit.offMode();
+    four_digit.colonOff();
     if (value_ > 0) {
       uint8_t offset = 0U;
-      lcd.onMode();
+      four_digit.onMode();
       if (value_ <= 9.90 ){offset = 1U;}
-      lcd.colonOn();
-      lcd.display(value_,true,true,offset);
+      four_digit.colonOn();
+      four_digit.display(value_,true,true,offset);
     }
     displayed_value = value_;
 
@@ -279,9 +283,9 @@ void setup() {
       value_ = 0.0f;
       value = 0.0f;
       already_reset= true;
-      lcd.clearScreen();// Resets to 0 the digital display
-      lcd.display(value_,true ,true,0);
-      lcd.offMode();
+      four_digit.clearScreen();// Resets to 0 the digital display
+      four_digit.display(value_,true ,true,0);
+      four_digit.offMode();
     }
    };
 
