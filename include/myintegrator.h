@@ -86,8 +86,8 @@ class MyIntegratorT : public Transform<C, P> {
 
  P value = 0;
  private:
+ int r = 0;
   P k;
-  int r = 0;
   bool decrement = false;
 };
 

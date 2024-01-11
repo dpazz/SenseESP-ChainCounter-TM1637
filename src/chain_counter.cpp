@@ -1,6 +1,7 @@
 
 #include <Arduino.h>
 #include "TM1637.h"
+#include "sensesp/signalk/signalk_value_listener.h"
 #include "sensesp/sensors/digital_input.h"
 #include "sensesp/signalk/signalk_output.h"
 #include "sensesp/system/lambda_consumer.h"
@@ -54,7 +55,7 @@ void setup() {
     debugD("Fixed IP configuration failed."); delay(5000);
    }
    sensesp_app = builder.set_hostname("ChainCounter")
-                    ->set_wifi("SSID", "SSIDpassword")
+                    ->set_wifi("4G-WIFI-FREE-TIME", "pazzagliawless")
                     ->get_app();
   /**
    * DigitalInputCounter will count the revolutions of the windlass with a
@@ -242,9 +243,28 @@ void setup() {
    chain_counter->connect_to(accumulator)
       ->connect_to(counterdisplay)
       ->connect_to(new SKOutputFloat(sk_path, sk_path_config_path, metadata));
+                    
+   /**
+   * a FloatValueListener of the SignalK path containing the value of the remote reset 
+   * of rode deployed. The config parameter of this listener is the time between readings
+   * of the subject SignalK path.
+   * if the value received from this path is = 1 the counter will be reset as if the
+   * local reset button was pressed
+   */
 
+   int rreset_read_delay = 800; // should be a little less of the update interval
+                                // of the SK path value so as to avoid info "lags"
+   
+   String rreset_sk_path = "navigation.anchor.rodeDeployedRemoteReset"; // to be evaluated if it has to be
+                                                                        // made configurable 
+   String rreset_config_path = "/rode_deployed_rreset/read_delay";
+   auto*  rreset_rode_deployed =new IntSKListener (
+              rreset_sk_path,
+              rreset_read_delay,
+              rreset_config_path
+           );
   /**
-   * DigitalInputChange monitors a physical button connected to BUTTON_PIN.
+   * DigitalInputState monitors a physical button connected to BUTTON_PIN.
    * Because its interrupt type is CHANGE, it will emit a value when the button
    * is pressed, and again when it's released, but that's OK - our
    * LambdaConsumer function will act only on the press, and ignore the release.
@@ -291,9 +311,14 @@ void setup() {
    };
 
   auto* button_consumer = new LambdaConsumer<int>(reset_function);
+  auto* rreset_consumer = new LambdaConsumer <int> (reset_function);
 
   /* Connect the button_watcher to the debounce to the button_consumer. */
   button_watcher->connect_to(debounce)->connect_to(button_consumer);
+  
+  /* Connect the rrset_consumer to the rreset_rode_deployed. */
+  rreset_rode_deployed->connect_to(rreset_consumer);
+  
   /* Finally, start the SensESPApp */
   sensesp_app->start();
   ota.start();
