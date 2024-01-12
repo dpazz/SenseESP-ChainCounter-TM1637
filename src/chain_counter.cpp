@@ -186,7 +186,7 @@ void setup() {
    String accum_config_path = "/accumulator/config";
    auto* accumulator =
       new Integrator (gypsy_circum, value, accum_config_path);
-   accumulator->set_description(
+    accumulator->set_description(
       "accumulator adds up all the counts it receives multiplied "
       "by the float gypsy_circum (circonferenza_barbotin in italian), "
       "which is the amount of chain, in meters, that is moved by each revolution "
@@ -249,7 +249,7 @@ void setup() {
    * of rode deployed. The config parameter of this listener is the time between readings
    * of the subject SignalK path.
    * if the value received from this path is = 1 the counter will be reset as if the
-   * local reset button was pressed
+   * local reset button was pressed by connecting it to rreset_consumer
    */
 
    int rreset_read_delay = 800; // should be a little less of the update interval
