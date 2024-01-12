@@ -214,6 +214,26 @@ void setup() {
       four_digit.display(value_,true,true,offset);
     }
     displayed_value = value_;
+    
+  /**
+   * a FloatValueListener of the SignalK path containing the value of the remote reset 
+   * of rode deployed. The config parameter of this listener is the time between readings
+   * of the subject SignalK path.
+   * if the value received from this path is = 1 the counter will be reset as if the
+   * local reset button was pressed by connecting it to rreset_consumer
+   */
+
+   int rreset_read_delay = 800; // should be a little less of the update interval
+                                // of the SK path value so as to avoid info "lags"
+   
+   String rreset_sk_path = "navigation.anchor.rodeDeployedRemoteReset"; // to be evaluated if it has to be
+                                                                        // made configurable 
+   String rreset_config_path = "/rode_deployed_rreset/read_delay";
+   auto*  rreset_rode_deployed =new IntSKListener (
+              rreset_sk_path,
+              rreset_read_delay,
+              rreset_config_path
+           );
 
   /**
    * There is no path for the amount of anchor rode deployed in the current
