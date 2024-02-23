@@ -1,7 +1,7 @@
 
 #include <Arduino.h>
 #include "TM1637.h"
-#include "sensesp/signalk/signalk_value_listener.h"
+#include "mysignalk_value_listener.h"
 #include "sensesp/sensors/digital_input.h"
 #include "sensesp/signalk/signalk_output.h"
 #include "sensesp/system/lambda_consumer.h"
@@ -19,8 +19,8 @@
 
 using namespace sensesp;
 sensesp::OTA ota("123456789");
-int CLK_PIN = 25;
-int DIO_PIN = 26;
+int CLK_PIN = 22;
+int DIO_PIN = 21                                                                                                                                                                                              ;
 float displayed_value = 0; //stores the last value sent to LCD
 TM1637 four_digit (CLK_PIN, DIO_PIN);
 /**
@@ -42,7 +42,7 @@ IPAddress dns2 (8,8,8,8);
 
 bool stop_decrement = false;
 bool already_reset = false;
-float value = 0.0f;
+float value = 0.0f;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
 float value_ = 0.0f; //the rounded to 1 decimal value
 
 void setup() {
@@ -64,7 +64,7 @@ void setup() {
    * counter_config_path.
    */
 
-   int COUNTER_PIN = 19;
+   int COUNTER_PIN = 16;
 
    int counter_read_delay = 1000;
    String counter_config_path = "/chain_counter/read_delay";
@@ -83,7 +83,7 @@ void setup() {
    * after a voltage divider to output a logical TTL (3.3V) level
    */
 
-   int UP_PIN = 21;
+   int UP_PIN = 17;
 
    int up_read_delay = 200;
    String up_config_path = "/up/up_read_delay";
@@ -96,80 +96,7 @@ void setup() {
       "the up button is in HIGH (1) state the chain is deployed downward"
       );
 
-  /**
-   * An intermediate transform that catch the emitted value from the accumulator
-   * to drive a TM1637 4-digit LCD display to show the count in parallel with what
-   * is tranmitted to signalk. The transform, after having used the value to manage
-   * the physical counter, emits the value itself in order to be used (if necessary)
-   * to further processing steps. In the present case the value itself is connected 
-   * to skoutputfloat
-   */
-   
-  // This lambda function "drives" the counting on LCD TM1637 display  
-  // using the TM1637 class "wrapper" to display the count. The
-  // final "-> float" refers to the return type of the function
-  // As for the input tranformation it is left unchanged. The lambda
-  // function in this particular case "spills" the input value just 
-  // to drive the 4digit display remaining a "nop" as for information
-  // transfer
- 
-  auto digital_counter_function = [] (float input,
-                                      float digit_value_displayed
-                                     ) -> float  {
-        value_ = float(round(input*10)/10); // prepare a rounded float
-                                            // with 1 significant decimal
-        if (digit_value_displayed >= value_)  {         // decrementing 
-          if (value_ <= 0.5f ) {            // nearby all chain recovered
-            if ( !already_reset  )  {       // only the first time
-                debugD("reset LCD: decrement nearby 0");
-                stop_decrement = true;
-                four_digit.clearScreen();
-                four_digit.display(00.00f);
-                four_digit.offMode();
-              } else  debugD("don't need to reset LCD again: displayed_value already = 0");
-              already_reset = true;
-          }
-        }
-        if ( !stop_decrement ){
-              debugD("write value_ on lcd");
-              if (value_ > 0) {
-                uint8_t offset = 0U;
-                four_digit.onMode();
-                if (value_ <= 9.90 ){offset = 1U;};
-                four_digit.colonOn();
-                four_digit.display(value_,true,true,offset);
-              }  
-        }
-        digit_value_displayed = value_; // lcd_value = the rounded float with 1 decimal on digital counter
-        if (digit_value_displayed > 0) {stop_decrement = false; already_reset = false;}
-        return value = input ;//NOP as for info transfer   
-                                
-  };
-          
-  // This is an array of parameter information, providing the keys and
-  // descriptions required to display user-friendly values in the configuration
-  // interface.
-
-    const ParamInfo* digitcounter_param_webUI_info_struct = new ParamInfo[1]{
-         {"displayed_value", "LCD_value"}};
-
-    String digitcounter_config_path = "/digitcounter/config";
-    //HINT: use only int, float or bool parameters because
-    //the web UI automatic detect of types to build
-    //interface schema doesn't work with other parameter
-    //types like e.g char or uint8_t. At least for the
-    //current SignalK/SensESP release (2.7.2 at 08 Jan 2024)
-
-    auto counterdisplay = new LambdaTransform <float, float>
-                                               (  digital_counter_function,
-                                                  displayed_value,
-                                                  digitcounter_param_webUI_info_struct,
-                                                  digitcounter_config_path 
-                                               ) ;
-    counterdisplay->set_description(
-      "counterdisplay drives the counting on a TM1637 lcd display "
-      "(in parallel with what is transmitted to signalk) using TM1637 wrapper class "
-      "output is equal to input since the transform is used to drive the physical unit only");
+  
 
   four_digit.begin(); //start lcd device
 
@@ -182,8 +109,8 @@ void setup() {
    * configured in the Config UI at accum_config_path. The configs are:
    * float gypsy_circum, float anchor_deployed and int reset 
    */
-   float gypsy_circum = 0.32;
    String accum_config_path = "/accumulator/config";
+   float gypsy_circum = 0.32;
    auto* accumulator =
       new Integrator (gypsy_circum, value, accum_config_path);
     accumulator->set_description(
@@ -210,31 +137,86 @@ void setup() {
       uint8_t offset = 0U;
       four_digit.onMode();
       if (value_ <= 9.90 ){offset = 1U;}
-      four_digit.colonOn();
+      //four_digit.colonOn();
       four_digit.display(value_,true,true,offset);
     }
     displayed_value = value_;
-    
+
   /**
-   * a FloatValueListener of the SignalK path containing the value of the remote reset 
-   * of rode deployed. The config parameter of this listener is the time between readings
-   * of the subject SignalK path.
-   * if the value received from this path is = 1 the counter will be reset as if the
-   * local reset button was pressed by connecting it to rreset_consumer
+   * An intermediate transform that catch the emitted value from the accumulator
+   * to drive a TM1637 4-digit LCD display to show the count in parallel with what
+   * is tranmitted to signalk. The transform, after having used the value to manage
+   * the physical counter, emits the value itself in order to be used (if necessary)
+   * to further processing steps. In the present case the value itself is connected 
+   * to skoutputfloat
    */
-
-   int rreset_read_delay = 800; // should be a little less of the update interval
-                                // of the SK path value so as to avoid info "lags"
    
-   String rreset_sk_path = "navigation.anchor.rodeDeployedRemoteReset"; // to be evaluated if it has to be
-                                                                        // made configurable 
-   String rreset_config_path = "/rode_deployed_rreset/read_delay";
-   auto*  rreset_rode_deployed =new IntSKListener (
-              rreset_sk_path,
-              rreset_read_delay,
-              rreset_config_path
-           );
+  // This lambda function "drives" the counting on LCD TM1637 display  
+  // using the TM1637 class "wrapper" to display the count. The
+  // final "-> float" refers to the return type of the function
+  // As for the input tranformation it is left unchanged. The lambda
+  // function in this particular case "spills" the input value just 
+  // to drive the 4digit display remaining a "nop" as for information
+  // transfer
+  auto digital_counter_function = [gypsy_circum] (float input,
+                                      float& digit_value_displayed
+                                     ) -> float {
+        value_ = float(round(input*10)/10); // prepare a rounded float
+                                            // with 1 significant decimal
+        if (digit_value_displayed >= value_)  {         // decrementing 
+          if (value_ <= gypsy_circum ) {    // nearby all chain recovered
+            if ( !already_reset  )  {       // only the first time
+                debugD("reset LCD: decrement nearby 0");
+                stop_decrement = true;
+                four_digit.clearScreen();
+                four_digit.display(00.00f);
+                four_digit.offMode();
+              } else  debugD("don't need to reset LCD again: displayed_value already = 0");
+              already_reset = true;
+          }
+        }
+        if ( !stop_decrement ){
+              debugD("write value_ on lcd");
+              if (value_ > 0) {
+                uint8_t offset = 0U;
+                four_digit.onMode();
+                if (value_ <= 9.90 ){offset = 1U;};
+                //four_digit.colonOn();
+                four_digit.display(value_,true,true,offset);
+              }  
+        }
+        digit_value_displayed = value_; // lcd_value = the rounded float with 1 decimal on digital counter
+        if (digit_value_displayed > 0) {stop_decrement = false; already_reset = false;}
+        return value = input ;//NOP as for info transfer   
+                                
+  };
+          
+  // This is an array of parameter information, providing the keys and
+  // descriptions required to display user-friendly values in the configuration
+  // interface.
 
+    const ParamInfo* digitcounter_param_webUI_info_struct = new ParamInfo[1]{
+         {"displayed_value", "auxScreen_value"}};
+
+    String digitcounter_config_path = "/digitcounter/config";
+    //HINT: use only int, float or bool parameters because
+    //the web UI automatic detect of types to build
+    //interface schema doesn't work with other parameter
+    //types like e.g char or uint8_t. At least for the
+    //current SignalK/SensESP release (2.7.2 at 08 Jan 2024)
+
+    auto counterdisplay = new LambdaTransform <float, float, float&>
+                                               (  digital_counter_function,
+                                                  displayed_value,
+                                                  digitcounter_param_webUI_info_struct,
+                                                  digitcounter_config_path 
+                                               ) ;
+    counterdisplay->set_description(
+      "counterdisplay drives the counting on a TM1637 lcd display "
+      "(in parallel with what is transmitted to signalk) using TM1637 wrapper class "
+      "output is equal to input since the transform is used to drive the physical unit only");
+ 
+   
   /**
    * There is no path for the amount of anchor rode deployed in the current
    * Signal K specification. By creating an instance of SKMetaData, we can send
@@ -268,16 +250,14 @@ void setup() {
    * a FloatValueListener of the SignalK path containing the value of the remote reset 
    * of rode deployed. The config parameter of this listener is the time between readings
    * of the subject SignalK path.
-   * if the value received from this path is = 1 the counter will be reset as if the
-   * local reset button was pressed by connecting it to rreset_consumer
+   * if the value received from this path is = 1 the counter will be reset (as if the
+   * local reset button was pressed) by connecting it to rreset_consumer
    */
 
-   int rreset_read_delay = 800; // should be a little less of the update interval
-                                // of the SK path value so as to avoid info "lags"
    
-   String rreset_sk_path = "navigation.anchor.rodeDeployedRemoteReset"; // to be evaluated if it has to be
-                                                                        // made configurable 
-   String rreset_config_path = "/rode_deployed_rreset/read_delay";
+   String rreset_sk_path = "navigation.anchor.rodeDeployedRemoteReset"; // to be evaluated if it has to be made configurable 
+   int rreset_read_delay = 800; // should be a little less of the update interval of the SK path value so as to avoid info "lags"
+   String rreset_config_path = "/remote_reset/config";
    auto*  rreset_rode_deployed =new IntSKListener (
               rreset_sk_path,
               rreset_read_delay,
@@ -294,18 +274,18 @@ void setup() {
  
    uint8_t BUTTON_PIN = 34;
 
-   int read_delay = 10;
-   String read_delay_config_path = "/button_watcher/read_delay";
+   int interrupt_type = CHANGE;
+   String int_type_config_path = "";//"/button_watcher/interrupt_type"; 
    
-   auto* button_watcher = new DigitalInputState(
-      BUTTON_PIN, INPUT, read_delay, read_delay_config_path);
+   auto* button_watcher = new DigitalInputChange(
+      BUTTON_PIN, INPUT_PULLUP, interrupt_type, int_type_config_path);
 
   /**
    * Create a DebounceInt to make sure we get a nice, clean signal from the
    * button. Set the debounce delay period to 15 ms, which can be configured at
    * debounce_config_path in the Config UI.
    */
-   int debounce_delay = 15;
+   int debounce_delay = 50;
    String debounce_config_path = "/debounce/delay";
    auto* debounce = new DebounceInt(debounce_delay, debounce_config_path);
 
@@ -318,7 +298,7 @@ void setup() {
    */
   
    auto reset_function = [accumulator](int input) {
-    if (input == 1) {
+    if (input == 0) {
       debugD("reset_function called");
       accumulator->reset();                 // Resets the output and stored value to 0.0
       value_ = 0.0f;
