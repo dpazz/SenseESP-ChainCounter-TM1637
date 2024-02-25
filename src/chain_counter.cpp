@@ -272,23 +272,32 @@ void setup() {
    * configured at read_delay_config_path in the Config UI.
    */
  
-   uint8_t BUTTON_PIN = 34;
+   uint8_t BUTTON_PIN = 35;
 
+   
    int interrupt_type = CHANGE;
-   String int_type_config_path = "";//"/button_watcher/interrupt_type"; 
+   String button_config_path = "";//"/button_watcher/interrupt_type"; 
    
    auto* button_watcher = new DigitalInputChange(
-      BUTTON_PIN, INPUT_PULLUP, interrupt_type, int_type_config_path);
-
+      BUTTON_PIN, INPUT_PULLUP, interrupt_type, button_config_path);
+   
+   /*
+   int button_read_delay = 20;
+   String button_config_path = "/button_watcher/read_delay"; 
+   
+   auto* button_watcher = new DigitalInputState(
+      BUTTON_PIN, INPUT, button_read_delay, button_config_path);
+   */
   /**
    * Create a DebounceInt to make sure we get a nice, clean signal from the
    * button. Set the debounce delay period to 15 ms, which can be configured at
    * debounce_config_path in the Config UI.
    */
+   
    int debounce_delay = 50;
    String debounce_config_path = "/debounce/delay";
    auto* debounce = new DebounceInt(debounce_delay, debounce_config_path);
-
+   
   /**
    * When the button is pressed (or released), it will call the lambda
    * expression (or "function") that's called by the LambdaConsumer. This is the
