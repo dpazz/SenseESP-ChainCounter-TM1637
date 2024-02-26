@@ -288,6 +288,7 @@ void setup() {
    auto* button_watcher = new DigitalInputState(
       BUTTON_PIN, INPUT, button_read_delay, button_config_path);
    */
+  
   /**
    * Create a DebounceInt to make sure we get a nice, clean signal from the
    * button. Set the debounce delay period to 15 ms, which can be configured at
