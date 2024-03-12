@@ -42,6 +42,7 @@ IPAddress dns2 (8,8,8,8);
 
 bool stop_decrement = false;
 bool already_reset = false;
+bool first_run = true;
 float value = 0.0f;                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
 float value_ = 0.0f; //the rounded to 1 decimal value
 
@@ -306,9 +307,11 @@ void setup() {
    * indicates a button press. It ignores the button release. If your button
    * goes to GND when pressed, make it "if (input == 0)".
    */
-  
+   
    auto reset_function = [accumulator](int input) {
-    if (input == 0) {
+    if (input == 0 && !first_run) {         // first_run bool intoduced to avoid
+                                            // spurious interrups catched by reset pin
+                                            // at boot time.
       debugD("reset_function called");
       accumulator->reset();                 // Resets the output and stored value to 0.0
       value_ = 0.0f;
@@ -318,6 +321,7 @@ void setup() {
       four_digit.display(value_,true ,true,0);
       four_digit.offMode();
     }
+    first_run = false;
    };
 
   auto* button_consumer = new LambdaConsumer<int>(reset_function);
@@ -328,7 +332,6 @@ void setup() {
   
   /* Connect the rrset_consumer to the rreset_rode_deployed. */
   rreset_rode_deployed->connect_to(rreset_consumer);
-  
   /* Finally, start the SensESPApp */
   sensesp_app->start();
   ota.start();
