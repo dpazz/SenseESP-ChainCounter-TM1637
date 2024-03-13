@@ -49,12 +49,11 @@ class MyIntegratorT : public Transform<C, P> {
 
   virtual void set_input (P input, uint8_t inputChannel = 0) override final {
     if (inputChannel == 1) {
-      if ( input == 0) decrement = true;
-      else decrement = false;
+      decrement = ( input == 0) ? true : false;
+      //debugD("UP pin = %0D", decrement);
       return;
     }
-    P m = k;
-    if (decrement) m = -k;
+    P m = (decrement) ? -k : k;
     if ( r == 1 ) {this->reset(); debugD ("reset accumulator by webUI");}
     else  value += input * m;
     if (value <= 0.01) value = 0; // neg not allowed and also cumulated roundings errors
@@ -86,7 +85,7 @@ class MyIntegratorT : public Transform<C, P> {
 
  P value = 0;
  private:
- int r = 0;
+  int r = 0;
   P k;
   bool decrement = false;
 };

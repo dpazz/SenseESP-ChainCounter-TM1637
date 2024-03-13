@@ -84,7 +84,7 @@ void setup() {
    * after a voltage divider to output a logical TTL (3.3V) level
    */
 
-   int UP_PIN = 17;
+   int UP_PIN = 2; // formerly was 17 but this pin doesn't have internal pullup capability
 
    int up_read_delay = 200;
    String up_config_path = "/up/up_read_delay";
@@ -273,7 +273,7 @@ void setup() {
    * configured at read_delay_config_path in the Config UI.
    */
  
-   uint8_t BUTTON_PIN = 35;
+   uint8_t BUTTON_PIN = 25; // formerly was 35 but this pin doesn't have internal pullup capability
 
    
    int interrupt_type = CHANGE;
